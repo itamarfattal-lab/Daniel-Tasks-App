@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>המשימות של דניאל</title>
+  <link rel="stylesheet" href="style.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+
+  <!-- מסך התחברות -->
+  <div id="auth-screen" class="auth-screen">
+    <div class="auth-card">
+      <div class="auth-logo">✓</div>
+      <h1 class="auth-title">המשימות שלי</h1>
+      <p class="auth-subtitle">ניהול משימות חכם ופשוט</p>
+
+      <div id="auth-tabs" class="auth-tabs">
+        <button class="tab-btn active" onclick="switchTab('login')">כניסה</button>
+        <button class="tab-btn" onclick="switchTab('register')">הרשמה</button>
+      </div>
+
+      <!-- כניסה -->
+      <div id="login-form">
+        <input type="email" id="login-email" class="auth-input" placeholder="אימייל" />
+        <input type="password" id="login-password" class="auth-input" placeholder="סיסמה" />
+        <button class="btn-primary full-width" onclick="loginEmail()">כניסה</button>
+        <div class="divider"><span>או</span></div>
+        <button class="btn-google full-width" onclick="loginGoogle()">
+          <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" width="18" /> כניסה עם Google
+        </button>
+      </div>
+
+      <!-- הרשמה -->
+      <div id="register-form" style="display:none">
+        <input type="email" id="reg-email" class="auth-input" placeholder="אימייל" />
+        <input type="password" id="reg-password" class="auth-input" placeholder="סיסמה (לפחות 6 תווים)" />
+        <button class="btn-primary full-width" onclick="registerEmail()">הרשמה</button>
+      </div>
+
+      <p id="auth-error" class="auth-error"></p>
+    </div>
+  </div>
+
+  <!-- האפליקציה הראשית -->
+  <div id="app" style="display:none">
+
+    <!-- Header -->
+    <header class="header">
+      <div class="header-inner">
+        <div class="header-right">
+          <div class="logo-mark">✓</div>
+          <div>
+            <h1 class="app-title">המשימות שלי</h1>
+            <p id="user-greeting" class="user-greeting"></p>
+          </div>
+        </div>
+        <button class="btn-icon" onclick="logout()" title="התנתק">↩</button>
+      </div>
+    </header>
+
+    <!-- Stats Bar -->
+    <div class="stats-bar">
+      <div class="stat-item">
+        <span id="stat-total" class="stat-num">0</span>
+        <span class="stat-label">סה"כ</span>
+      </div>
+      <div class="stat-divider"></div>
+      <div class="stat-item">
+        <span id="stat-done" class="stat-num done">0</span>
+        <span class="stat-label">הושלמו</span>
+      </div>
+      <div class="stat-divider"></div>
+      <div class="stat-item">
+        <span id="stat-pending" class="stat-num pending">0</span>
+        <span class="stat-label">ממתינות</span>
+      </div>
+    </div>
+
+    <!-- Filters & Sort -->
+    <div class="filters-bar">
+      <div class="filters-scroll">
+        <button class="filter-chip active" data-filter="all" onclick="setFilter('all', this)">הכל</button>
+        <button class="filter-chip" data-filter="לימודים" onclick="setFilter('לימודים', this)">📚 לימודים</button>
+        <button class="filter-chip" data-filter="אישי" onclick="setFilter('אישי', this)">👤 אישי</button>
+        <button class="filter-chip" data-filter="עבודה" onclick="setFilter('עבודה', this)">💼 עבודה</button>
+        <button class="filter-chip" data-filter="custom" id="custom-category-chip" onclick="setFilter('custom', this)" style="display:none"></button>
+      </div>
+      <select class="sort-select" onchange="setSort(this.value)">
+        <option value="priority">לפי עדיפות</option>
+        <option value="dueDate">לפי תאריך</option>
+        <option value="createdAt">לפי יצירה</option>
+        <option value="category">לפי קטגוריה</option>
+      </select>
+    </div>
+
+    <!-- Task List -->
+    <main class="main-content">
+      <div id="task-list" class="task-list"></div>
+      <div id="empty-state" class="empty-state" style="display:none">
+        <div class="empty-icon">📋</div>
+        <p>אין משימות עדיין</p>
+        <span>לחץ על + כדי להוסיף</span>
+      </div>
+    </main>
+
+    <!-- FAB Button -->
+    <button class="fab" onclick="openAddModal()" title="הוסף משימה">+</button>
+
+  </div>
+
+  <!-- Modal הוספה/עריכה -->
+  <div id="task-modal" class="modal-overlay" style="display:none" onclick="closeModalOutside(event)">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h2 id="modal-title">משימה חדשה</h2>
+        <button class="btn-icon" onclick="closeModal()">✕</button>
+      </div>
+
+      <div class="modal-body">
+        <div class="form-group">
+          <label>שם המשימה *</label>
+          <input type="text" id="task-title" class="form-input" placeholder="מה צריך לעשות?" maxlength="100" />
+        </div>
+
+        <div class="form-group">
+          <label>תיאור (אופציונלי)</label>
+          <textarea id="task-desc" class="form-input form-textarea" placeholder="פרטים נוספים..."></textarea>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group half">
+            <label>עדיפות</label>
+            <select id="task-priority" class="form-input">
+              <option value="high">🔴 גבוהה</option>
+              <option value="medium" selected>🟡 בינונית</option>
+              <option value="low">🟢 נמוכה</option>
+            </select>
+          </div>
+          <div class="form-group half">
+            <label>קטגוריה</label>
+            <select id="task-category" class="form-input" onchange="handleCategoryChange()">
+              <option value="לימודים">📚 לימודים</option>
+              <option value="אישי">👤 אישי</option>
+              <option value="עבודה">💼 עבודה</option>
+              <option value="custom">✏️ הגדר בעצמי</option>
+            </select>
+          </div>
+        </div>
+
+        <div id="custom-category-input" class="form-group" style="display:none">
+          <label>שם הקטגוריה</label>
+          <input type="text" id="task-custom-category" class="form-input" placeholder="קטגוריה מותאמת אישית" />
+        </div>
+
+        <div class="form-row">
+          <div class="form-group half">
+            <label>תאריך יעד</label>
+            <input type="date" id="task-due" class="form-input" />
+          </div>
+          <div class="form-group half">
+            <label>תזכורת</label>
+            <input type="datetime-local" id="task-reminder" class="form-input" />
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn-secondary" onclick="closeModal()">ביטול</button>
+        <button class="btn-primary" onclick="saveTask()">שמור</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast -->
+  <div id="toast" class="toast"></div>
+
+  <!-- Firebase -->
+  <script type="module" src="app.js"></script>
+</body>
+</html>
