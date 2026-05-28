@@ -10,22 +10,8 @@
 </head>
 <body>
 
-  <!-- מסך התחברות -->
-  <div id="auth-screen" class="auth-screen">
-    <div class="auth-card">
-      <div class="auth-logo">✓</div>
-      <h1 class="auth-title">המשימות שלי</h1>
-      <p class="auth-subtitle">ניהול משימות חכם ופשוט</p>
-      <button class="btn-google full-width" onclick="loginGoogle()">
-        <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" width="18" /> כניסה עם Google
-      </button>
-      <p class="auth-note">כניסה חד פעמית – האפליקציה תזכור אותך 👋</p>
-      <p id="auth-error" class="auth-error"></p>
-    </div>
-  </div>
-
   <!-- האפליקציה הראשית -->
-  <div id="app" style="display:none">
+  <div id="app">
 
     <!-- Header -->
     <header class="header">
@@ -34,10 +20,9 @@
           <div class="logo-mark">✓</div>
           <div>
             <h1 class="app-title">המשימות שלי</h1>
-            <p id="user-greeting" class="user-greeting"></p>
+            <p class="user-greeting">שלום דניאל 👋</p>
           </div>
         </div>
-        <button class="btn-icon" onclick="logout()" title="התנתק">↩</button>
       </div>
     </header>
 
