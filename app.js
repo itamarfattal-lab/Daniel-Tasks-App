@@ -226,7 +226,8 @@ window.saveTask = async function() {
     updateCustomCategoryChip();
     closeModal();
   } catch (e) {
-    showToast('שגיאה בשמירה, נסה שוב');
+    console.error('Save error:', e);
+    showToast('שגיאה: ' + (e.code || e.message || JSON.stringify(e)));
   }
 };
 
