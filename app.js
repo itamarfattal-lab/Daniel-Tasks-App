@@ -1,11 +1,7 @@
 // ===== Firebase Config =====
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
 import {
-  getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword,
-  signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged
-} from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
-import {
-  getFirestore, collection, addDoc, getDocs, updateDoc, deleteDoc,
+  getFirestore, collection, addDoc, updateDoc, deleteDoc,
   doc, query, where, onSnapshot, serverTimestamp
 } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
@@ -19,114 +15,31 @@ const firebaseConfig = {
 };
 
 const app = initializeApp(firebaseConfig);
-const auth = getAuth(app);
 const db = getFirestore(app);
-const googleProvider = new GoogleAuthProvider();
+
+// ===== מזהה קבוע לכל המשימות =====
+const OWNER_ID = "daniel-fattal";
 
 // ===== State =====
-let currentUser = null;
 let tasks = [];
 let currentFilter = 'all';
 let currentSort = 'priority';
 let editingTaskId = null;
-let unsubscribe = null;
 let scheduledReminders = {};
 
-// ===== Priority order =====
+// ===== Priority =====
 const priorityOrder = { high: 0, medium: 1, low: 2 };
 const priorityLabel = { high: '🔴 גבוהה', medium: '🟡 בינונית', low: '🟢 נמוכה' };
 const categoryEmoji = { 'לימודים': '📚', 'אישי': '👤', 'עבודה': '💼' };
 
-// ===== Auth State =====
-onAuthStateChanged(auth, user => {
-  if (user) {
-    currentUser = user;
-    showApp(user);
-    listenTasks();
-  } else {
-    currentUser = null;
-    showAuth();
-    if (unsubscribe) unsubscribe();
-  }
-});
-
-function showApp(user) {
-  document.getElementById('auth-screen').style.display = 'none';
-  document.getElementById('app').style.display = 'block';
-  const name = user.displayName || user.email.split('@')[0];
-  document.getElementById('user-greeting').textContent = `שלום, ${name} 👋`;
-  requestNotificationPermission();
-}
-
-function showAuth() {
-  document.getElementById('auth-screen').style.display = 'flex';
-  document.getElementById('app').style.display = 'none';
-}
-
-// ===== Auth Functions =====
-window.switchTab = function(tab) {
-  document.getElementById('login-form').style.display = tab === 'login' ? 'block' : 'none';
-  document.getElementById('register-form').style.display = tab === 'register' ? 'block' : 'none';
-  document.querySelectorAll('.tab-btn').forEach((btn, i) => {
-    btn.classList.toggle('active', (i === 0 && tab === 'login') || (i === 1 && tab === 'register'));
-  });
-  document.getElementById('auth-error').textContent = '';
-};
-
-window.loginEmail = async function() {
-  const email = document.getElementById('login-email').value.trim();
-  const password = document.getElementById('login-password').value;
-  try {
-    await signInWithEmailAndPassword(auth, email, password);
-  } catch (e) {
-    showAuthError(parseFirebaseError(e.code));
-  }
-};
-
-window.registerEmail = async function() {
-  const email = document.getElementById('reg-email').value.trim();
-  const password = document.getElementById('reg-password').value;
-  try {
-    await createUserWithEmailAndPassword(auth, email, password);
-  } catch (e) {
-    showAuthError(parseFirebaseError(e.code));
-  }
-};
-
-window.loginGoogle = async function() {
-  try {
-    await signInWithPopup(auth, googleProvider);
-  } catch (e) {
-    showAuthError('לא הצלחנו להתחבר עם Google. נסה שוב.');
-  }
-};
-
-window.logout = async function() {
-  await signOut(auth);
-  tasks = [];
-};
-
-function showAuthError(msg) {
-  document.getElementById('auth-error').textContent = msg;
-}
-
-function parseFirebaseError(code) {
-  const msgs = {
-    'auth/user-not-found': 'משתמש לא קיים',
-    'auth/wrong-password': 'סיסמה שגויה',
-    'auth/email-already-in-use': 'האימייל כבר בשימוש',
-    'auth/weak-password': 'הסיסמה חלשה מדי (לפחות 6 תווים)',
-    'auth/invalid-email': 'אימייל לא תקין',
-    'auth/invalid-credential': 'אימייל או סיסמה שגויים',
-  };
-  return msgs[code] || 'שגיאה, נסה שוב';
-}
+// ===== התחלה =====
+listenTasks();
+requestNotificationPermission();
 
 // ===== Firestore =====
 function listenTasks() {
-  if (unsubscribe) unsubscribe();
-  const q = query(collection(db, 'tasks'), where('uid', '==', currentUser.uid));
-  unsubscribe = onSnapshot(q, snapshot => {
+  const q = query(collection(db, 'tasks'), where('uid', '==', OWNER_ID));
+  onSnapshot(q, snapshot => {
     tasks = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
     renderTasks();
     updateStats();
@@ -137,7 +50,7 @@ function listenTasks() {
 async function addTask(taskData) {
   await addDoc(collection(db, 'tasks'), {
     ...taskData,
-    uid: currentUser.uid,
+    uid: OWNER_ID,
     createdAt: serverTimestamp(),
     completed: false
   });
@@ -177,12 +90,10 @@ function getFilteredSorted() {
       return a.dueDate.localeCompare(b.dueDate);
     }
     if (currentSort === 'category') return (a.category || '').localeCompare(b.category || '');
-    // createdAt
     const ta = a.createdAt?.seconds || 0;
     const tb = b.createdAt?.seconds || 0;
     return tb - ta;
   });
-  // completed tasks always at bottom
   list.sort((a, b) => (a.completed ? 1 : 0) - (b.completed ? 1 : 0));
   return list;
 }
@@ -204,7 +115,7 @@ function renderTasks() {
     const isOverdue = task.dueDate && !task.completed && task.dueDate < todayStr();
     const emoji = categoryEmoji[task.category] || '🏷️';
     return `
-      <div class="task-card priority-${task.priority} ${task.completed ? 'completed' : ''}" data-id="${task.id}">
+      <div class="task-card priority-${task.priority} ${task.completed ? 'completed' : ''}">
         <div class="task-checkbox ${task.completed ? 'checked' : ''}" onclick="toggleTask('${task.id}')">
           ${task.completed ? '✓' : ''}
         </div>
@@ -312,8 +223,6 @@ window.saveTask = async function() {
       await addTask(data);
       showToast('המשימה נוספה ✓');
     }
-
-    // Update custom category chip
     updateCustomCategoryChip();
     closeModal();
   } catch (e) {
@@ -335,7 +244,6 @@ window.confirmDelete = function(id) {
   }
 };
 
-// ===== Custom category chip =====
 function updateCustomCategoryChip() {
   const customCats = tasks
     .map(t => t.category)
@@ -363,14 +271,12 @@ function scheduleAllReminders() {
   tasks.forEach(task => {
     if (task.reminder && !task.completed) {
       const reminderTime = new Date(task.reminder).getTime();
-      const now = Date.now();
-      const delay = reminderTime - now;
+      const delay = reminderTime - Date.now();
       if (delay > 0 && delay < 7 * 24 * 60 * 60 * 1000) {
         scheduledReminders[task.id] = setTimeout(() => {
           if (Notification.permission === 'granted') {
             new Notification('תזכורת: ' + task.title, {
               body: task.dueDate ? `תאריך יעד: ${formatDate(task.dueDate)}` : '',
-              icon: '/favicon.ico'
             });
           }
         }, delay);
