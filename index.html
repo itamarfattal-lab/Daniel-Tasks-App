@@ -16,30 +16,10 @@
       <div class="auth-logo">✓</div>
       <h1 class="auth-title">המשימות שלי</h1>
       <p class="auth-subtitle">ניהול משימות חכם ופשוט</p>
-
-      <div id="auth-tabs" class="auth-tabs">
-        <button class="tab-btn active" onclick="switchTab('login')">כניסה</button>
-        <button class="tab-btn" onclick="switchTab('register')">הרשמה</button>
-      </div>
-
-      <!-- כניסה -->
-      <div id="login-form">
-        <input type="email" id="login-email" class="auth-input" placeholder="אימייל" />
-        <input type="password" id="login-password" class="auth-input" placeholder="סיסמה" />
-        <button class="btn-primary full-width" onclick="loginEmail()">כניסה</button>
-        <div class="divider"><span>או</span></div>
-        <button class="btn-google full-width" onclick="loginGoogle()">
-          <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" width="18" /> כניסה עם Google
-        </button>
-      </div>
-
-      <!-- הרשמה -->
-      <div id="register-form" style="display:none">
-        <input type="email" id="reg-email" class="auth-input" placeholder="אימייל" />
-        <input type="password" id="reg-password" class="auth-input" placeholder="סיסמה (לפחות 6 תווים)" />
-        <button class="btn-primary full-width" onclick="registerEmail()">הרשמה</button>
-      </div>
-
+      <button class="btn-google full-width" onclick="loginGoogle()">
+        <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" width="18" /> כניסה עם Google
+      </button>
+      <p class="auth-note">כניסה חד פעמית – האפליקציה תזכור אותך 👋</p>
       <p id="auth-error" class="auth-error"></p>
     </div>
   </div>
